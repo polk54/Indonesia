@@ -1,0 +1,187 @@
+<!-- this file will visualize the Poverty headcount ratio at $1.90 a day (2011 PPP) (% of population) for Indonesia from the years 1984 - 2016 -->
+
+<!DOCTYPE html>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+
+<title>Indonesia</title>
+<meta name= "description" content="The poverty headcount ratio at $1.90 a day (2011 PPP) (% of population) for Indonesia from the years 1984 - 2016">
+<meta name="author" content="Parul Agarwal">
+
+<!-- Setting up the style -->
+<style> 
+    .bar{
+        fill: #FFD300;
+    }
+    
+    .bar:hover {
+        fill: #FFB101;
+    }
+    
+    text{
+        font-family: 'Roboto Mono', monospace;
+        fill: #5b5b5e;
+    }
+    
+    .toolTip {
+        position: absolute;
+        display: none;
+        min-width: 10px;
+        height: auto;
+        background: none repeat scroll 0 0 #ffffff;
+        padding: 5px;
+        text-align: left;
+        font-family: 'Roboto Mono', monospace;
+        font-size: 14px;
+        color: #5b5b5e;
+    }
+    
+    ::selection {
+        background: #D0EEFF; /* WebKit/Blink Browsers */
+    }
+    ::-moz-selection {
+        background: #D0EEFF; /* Gecko Browsers */
+    }
+    
+    a{
+        color: #FFB101;
+        text-decoration: none;
+    }
+        
+    body{
+        font-family: sans-serif;
+        padding: 10px 40px 0px 30px;
+    }
+    
+    h1{
+        color: #FFB101;
+    }
+    
+    #intro{
+        padding-bottom: 20px;
+        color: #5b5b5e;
+    }
+    
+    #footer{
+        padding-top: 20px;
+        font-family: sans-serif;
+        font-size: 10px;
+        color: #5b5b5e;
+    }
+    
+</style>
+
+
+<!-- Header -->
+<html lang="en">
+<body>
+    <h1> Poverty in Indonesia: </h1>
+    <div id="intro"> In Indonesia, the percent of the population living at $1.90 a day or less fell from 71.4% to 6.5% of the population from 1984 to 2016. </div>
+</body>
+</html>
+
+<!-- Javascript -->
+<svg width="1000" height="500"></svg>
+<script>
+     var svg = d3.select("svg"),
+        margin = {top: 10, right: 10, bottom: 30, left: 80},
+        width = +svg.attr("width") - margin.left - margin.right,
+        height = +svg.attr("height") - margin.top - margin.bottom,
+        g = svg.append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    
+    var tooltip = d3.select("body").append("div").attr("class", "toolTip");
+
+    var x = d3.scaleBand()
+        .rangeRound([0, width])
+        .paddingInner(0.05)
+        .align(0.1);
+
+    var y = d3.scaleLinear()
+        .rangeRound([height, 0]);
+
+
+d3.csv("POV.csv")
+    .row(function(d){
+        return{
+            year: d.year,
+            percent: d.POV,
+        }
+})
+    .get(function(error, data){
+        if (error) throw error;
+    
+        var completeData = [];     
+        var years = [];
+        var pov = [];
+    
+        data.forEach(function(row){
+        row.pov = parseFloat(row.percent)
+            if (years.indexOf(row.year) === -1) {
+                years.push(row.year)
+            }
+        })
+    
+        years.sort();
+    
+        years.forEach(function(year){
+            var dataObject = {}
+            pov = 0;
+            
+            data.forEach(function(row){
+                if(year === row.year){
+                    pov +=row.pov;
+                }
+            });
+            
+            dataObject["year"] = year;
+            dataObject["pov"] = pov;
+            completeData.push(dataObject);
+        });
+    
+
+        x.domain(completeData.map(function(d) { return d.year; }));
+        y.domain([0, 100]);
+    
+        g.append("g")
+            .attr("class", "axis axis--x")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x))
+            .append("text")
+            .text("Year")
+            .attr("x", 400)
+            .attr("y", 30);
+        g.append("g")
+            .attr("class", "axis axis--y")
+            .call(d3.axisLeft(y).ticks(10))
+            .append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -30)
+            .attr("y", -45)
+            .attr("dy", "0.71em")
+            .attr("text-anchor", "end")
+            .text("Poverty headcount ratio at $1.90 a day (2011 PPP) (% of population)");
+        g.selectAll(".bar")
+            .data(completeData)
+            .enter().append("rect")
+            .attr("class", "bar")
+            .attr("x", function(d) { 
+                return x(d.year); })
+            .attr("y", function(d) { return y(d.pov); })
+            .attr("width", x.bandwidth())
+            .attr("height", function(d) { return height - y(d.pov); })
+            .on("mousemove", function(d){
+                tooltip
+                .style("left", d3.event.pageX - 50 + "px")
+                .style("top", d3.event.pageY - 50 + "px")
+                .style("display", "inline-block")
+                .html((d.pov) + "%"); })
+            .on("mouseout", function(d){ tooltip.style("display", "none");});    
+});
+</script>
+
+<html lang="en">
+<body>
+    <div id=footer> Data source: <a href="https://data.worldbank.org/indicator/SI.POV.DDAY?view=chart"> World Bank </a> </div>
+</body>
+</html>
